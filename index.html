@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Forex Sessions - Naija Edition</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      padding: 2em;
+    }
+    h1 { color: #0ff; }
+    .session {
+      margin: 1em 0;
+      padding: 1em;
+      border-radius: 10px;
+      background: #222;
+      transition: 0.3s;
+    }
+    .active {
+      background: #0ff;
+      color: #111;
+      font-weight: bold;
+      box-shadow: 0 0 15px #0ff;
+    }
+    .countdown {
+      margin-top: 0.5em;
+      font-size: 0.9em;
+      color: #ccc;
+    }
+    #localTime {
+      margin-bottom: 2em;
+      font-size: 1.2em;
+      color: #0ff;
+    }
+  </style>
+</head>
+<body>
+  <div id="localTime"></div>
+  <h1>Forex Market Sessions</h1>
+  <div id="sessions"></div>
+
+  <script>
+    function updateLocalTime() {
+      const options = {
+        timeZone: 'Africa/Lagos',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      };
+      const now = new Date();
+      const localTime = now.toLocaleString('en-NG', options);
+      document.getElementById('localTime').innerText = 'Local Time (Nigeria): ' + localTime;
+    }
+
+    setInterval(updateLocalTime, 1000);
+    updateLocalTime();
+
+    const sessions = [
+      { name: "Sydney", start: 21, end: 6 },
+      { name: "Tokyo", start: 23, end: 8 },
+      { name: "London", start: 7, end: 16 },
+      { name: "New York", start: 12, end: 21 }
+    ];
+
+    const container = document.getElementById('sessions');
+
+    function updateSessions() {
+      container.innerHTML = '';
+      const now = new Date();
+      const utcHour = now.getUTCHours();
+      const utcMinute = now.getUTCMinutes();
+      const utcSecond = now.getUTCSeconds();
+      const currentTimeInSeconds = utcHour * 3600 + utcMinute * 60 + utcSecond;
+
+      sessions.forEach(session => {
+        let isActive = false;
+        let sessionStart = session.start * 3600;
+        let sessionEnd = session.end * 3600;
+        let timeToNext = 0;
+
+        if (session.start < session.end) {
+          isActive = currentTimeInSeconds >= sessionStart && currentTimeInSeconds < sessionEnd;
+          if (isActive) {
+            timeToNext = sessionEnd - currentTimeInSeconds;
+          } else {
+            timeToNext = sessionStart - currentTimeInSeconds;
+          }
+        } else {
+          // Session spans midnight
+          isActive = currentTimeInSeconds >= sessionStart || currentTimeInSeconds < sessionEnd;
+          if (isActive) {
+            if (currentTimeInSeconds < sessionEnd) {
+              timeToNext = sessionEnd - currentTimeInSeconds;
+            } else {
+              timeToNext = 86400 - currentTimeInSeconds + sessionEnd;
+            }
+          } else {
+            timeToNext = sessionStart - currentTimeInSeconds;
+            if (timeToNext < 0) timeToNext += 86400;
+          }
+        }
+
+        const div = document.createElement('div');
+        div.className = 'session' + (isActive ? ' active' : '');
+        div.innerHTML = `${session.name} Session (${session.start}:00 - ${session.end}:00 UTC)<br>
+          <div class="countdown">` +
+          (isActive ? `Ends in ${formatTime(timeToNext)}` : `Starts in ${formatTime(timeToNext)}`) +
+          `</div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    updateSessions();
+    setInterval(updateSessions, 1000);
+  </script>
+</body>
+</html>
